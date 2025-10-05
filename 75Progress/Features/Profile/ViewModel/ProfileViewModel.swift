@@ -7,29 +7,72 @@
 
 import SwiftUI
 import Foundation
+import Combine
 
 class ProfileViewModel: ObservableObject {
     @Published var userProfile: UserProfile
     @Published var currentChallenge: Challenge
     @Published var milestones: [Milestone] = []
+    @Published var isLoading = false
     
-    init() {
+    private let userProfileRepository: UserProfileRepositoryProtocol
+    private var cancellables = Set<AnyCancellable>()
+    
+    init(userProfileRepository: UserProfileRepositoryProtocol = UserProfileRepository()) {
+        self.userProfileRepository = userProfileRepository
+        
+        // Initialize with default values
         self.userProfile = UserProfile(
-            name: "John Doe",
-            email: "john.doe@example.com",
-            currentStreak: 14,
-            totalDays: 45,
-            completedChallenges: 2
+            name: "Loading...",
+            email: "loading@example.com",
+            currentStreak: 0,
+            totalDays: 0,
+            completedChallenges: 0
         )
         
         self.currentChallenge = Challenge(
             name: "75 Hard",
-            currentDay: 14,
+            currentDay: 0,
             totalDays: 75,
             isActive: true
         )
         
         setupMilestones()
+        loadUserProfile()
+    }
+    
+    private func loadUserProfile() {
+        isLoading = true
+        
+        // Try to load from local storage first
+        if let localProfile = userProfileRepository.loadProfileLocally() {
+            userProfile = localProfile
+            updateChallengeFromProfile()
+            isLoading = false
+        }
+        
+        // Then try to fetch from Firestore
+        userProfileRepository.fetchUserProfile()
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.isLoading = false
+                    if case .failure(let error) = completion {
+                        print("Failed to fetch user profile: \(error)")
+                    }
+                },
+                receiveValue: { [weak self] profile in
+                    if let profile = profile {
+                        self?.userProfile = profile
+                        self?.updateChallengeFromProfile()
+                    }
+                }
+            )
+            .store(in: &cancellables)
+    }
+    
+    private func updateChallengeFromProfile() {
+        currentChallenge.currentDay = userProfile.currentStreak
     }
     
     private func setupMilestones() {

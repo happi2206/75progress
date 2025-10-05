@@ -7,6 +7,11 @@
 
 import SwiftUI
 import Foundation
+import UIKit
+import FirebaseAuth
+import FirebaseFirestore
+import FirebaseStorage
+
 
 class HomeViewModel: ObservableObject {
     @Published var currentDay: Int = 14
@@ -14,6 +19,34 @@ class HomeViewModel: ObservableObject {
     @Published var progressItems: [ProgressItem] = []
     @Published var currentStreak: Int = 14
     
+    // Holds the current user-provided content for each progress item
+    @Published var cardContent: [UUID: ProgressCardContent] = [:]
+    private let photoStorage: PhotoStorageServing = PhotoStorageService()
+    private let dayLogService: DayLogServing = DayLogService()
+
+    func uploadPhotoForToday(_ image: UIImage) {
+        let forDate = currentDate
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let uid: String
+                if let current = Auth.auth().currentUser?.uid {
+                    uid = current
+                } else {
+                    let res = try await Auth.auth().signInAnonymously()
+                    uid = res.user.uid
+                }
+
+                let url = try await photoStorage.uploadProgressPhoto(image, for: forDate, uid: uid)
+                try await dayLogService.appendPhotoURL(url, for: forDate, uid: uid)
+
+            } catch {
+                // surface a friendly error; keep your own toast system if you have one
+                print("Upload failed:", error)
+            }
+        }
+    }
+
     init() {
         setupProgressItems()
     }
@@ -51,5 +84,24 @@ class HomeViewModel: ObservableObject {
     
     func resetStreak() {
         currentStreak = 0
+    }
+    
+    // MARK: - Card content updates
+    func setPhoto(for itemId: UUID, _ image: UIImage) {
+        // Check if it's an empty image (to clear content)
+        if image.size.width == 0 || image.size.height == 0 {
+            cardContent.removeValue(forKey: itemId)
+        } else {
+            cardContent[itemId] = .photo(image)
+        }
+    }
+    
+    func setNote(for itemId: UUID, _ text: String) {
+        // Check if it's an empty string (to clear content)
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            cardContent.removeValue(forKey: itemId)
+        } else {
+            cardContent[itemId] = .note(text)
+        }
     }
 }

@@ -8,11 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var onboardingCoordinator: OnboardingCoordinator
+    
     var body: some View {
         TabBarView()
+            .toast()
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(OnboardingCoordinator())
 }

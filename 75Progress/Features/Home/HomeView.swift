@@ -16,19 +16,13 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Text("Logo")
+                    Text("75 Hard")
                         .font(.system(size: 24, weight: .bold, design: .default))
                         .foregroundColor(.primary)
                     
                     Spacer()
                     
-                    Button(action: {
-                        viewModel.addNewEntry()
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.primary)
-                    }
+                  
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
@@ -95,7 +89,17 @@ struct HomeView: View {
                     GridItem(.flexible(), spacing: 16)
                 ], spacing: 16) {
                     ForEach(viewModel.progressItems) { item in
-                        ProgressCard(item: item)
+                        ProgressCard(
+                            item: item,
+                            content: viewModel.cardContent[item.id],
+                            onPhoto: { image in
+                                viewModel.setPhoto(for: item.id, image)
+                                viewModel.uploadPhotoForToday(image)
+                            },
+                            onNote: { text in
+                                viewModel.setNote(for: item.id, text)
+                            }
+                        )
                     }
                 }
                 .padding(.horizontal, 20)

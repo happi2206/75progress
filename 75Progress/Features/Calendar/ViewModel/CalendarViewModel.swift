@@ -113,7 +113,6 @@ class CalendarViewModel: ObservableObject {
     
     func daysInMonth() -> [Date?] {
         let monthStart = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
-        let monthEnd = calendar.dateInterval(of: .month, for: currentMonth)?.end ?? currentMonth
         
         // Get the first day of the month
         let firstDayOfMonth = calendar.component(.weekday, from: monthStart)
