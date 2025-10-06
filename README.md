@@ -31,12 +31,12 @@ If you miss any requirement, you restart at **Day 1**.
 
 ---
 
-## How to Run (Marker Instructions)
+## How to Run  
 1. Open the project in **Xcode 16+**.
 2. Select an **iOS 17+** simulator (or a device).
 3. **Build & Run.**
    - The app auto‑configures Firebase using the bundled `GoogleService-Info.plist`.
-   - It signs in **anonymously** on first launch — no accounts required.
+   - It signs in **anonymously** on first launch
    - First‑run onboarding appears (what/why/benefits → goals → name) and then the Today screen.
 
 > If the machine is offline, the app still works locally (Core Data + UserDefaults). Cloud writes will succeed when a connection is available.
