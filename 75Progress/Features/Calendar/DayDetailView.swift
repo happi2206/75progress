@@ -52,59 +52,11 @@ struct DayDetailView: View {
                     }
                     .padding(.horizontal, 20)
                     
-                    // Photos Grid
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Photos")
-                                .font(.system(size: 18, weight: .semibold, design: .default))
-                                .foregroundColor(.primary)
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                addPhoto()
-                            }) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 20, weight: .medium))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        
-                        if let entry = entry, !entry.photos.isEmpty {
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ], spacing: 16) {
-                                ForEach(entry.photos) { photo in
-                                    PhotoCard(
-                                        photo: photo,
-                                        note: entry.notes[photo.id] ?? "",
-                                        onDelete: {
-                                            deletePhoto(photo)
-                                        }
-                                    )
-                                }
-                            }
-                        } else {
-                            VStack(spacing: 12) {
-                                Image(systemName: "camera")
-                                    .font(.system(size: 40, weight: .light))
-                                    .foregroundColor(.secondary)
-                                
-                                Text("No photos yet")
-                                    .font(.system(size: 16, weight: .medium, design: .default))
-                                    .foregroundColor(.secondary)
-                                
-                                Button("Add Photo") {
-                                    addPhoto()
-                                }
-                                .font(.system(size: 14, weight: .semibold, design: .default))
-                                .foregroundColor(.blue)
-                            }
-                            .padding(.vertical, 40)
-                        }
+                    // Entries preview
+                    if let entry = entry {
+                        EntriesGrid(entry: entry)
+                            .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
                     
                     // Summary
                     VStack(alignment: .leading, spacing: 12) {
@@ -184,62 +136,77 @@ struct DayDetailView: View {
         print("Add photo tapped")
     }
     
-    private func deletePhoto(_ photo: PhotoItem) {
-        guard var currentEntry = entry else { return }
-        currentEntry.photos.removeAll { $0.id == photo.id }
-        currentEntry.notes.removeValue(forKey: photo.id)
-        
-        viewModel.saveEntry(currentEntry)
-        entry = currentEntry
-    }
 }
 
-struct PhotoCard: View {
-    let photo: PhotoItem
-    let note: String
-    let onDelete: () -> Void
-    
+struct EntriesGrid: View {
+    let entry: DayEntry
+
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.blue.opacity(0.1))
-                    .frame(height: 120)
-                
-                Image(systemName: "photo")
-                    .font(.system(size: 30, weight: .medium))
-                    .foregroundColor(.blue)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(photo.label)
-                    .font(.system(size: 14, weight: .semibold, design: .default))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                if !note.isEmpty {
-                    Text(note)
-                        .font(.system(size: 12, weight: .medium, design: .default))
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Your Entries")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(entry.photos) { photo in
+                    VStack(alignment: .leading, spacing: 8) {
+                        AsyncImage(url: photo.url) { image in
+                            image.resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 26, weight: .medium))
+                                        .foregroundColor(.blue)
+                                )
+                        }
+                        .frame(height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+
+                        Text(photo.label)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        if let note = entry.notes[photo.id], !note.isEmpty {
+                            Text(note)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+                    )
                 }
-            }
-            
-            HStack {
-                Spacer()
-                
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.red)
+
+                if let summary = entry.summary, !summary.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Reflection")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        Text(summary)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+                    )
                 }
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
-        )
     }
 }
 

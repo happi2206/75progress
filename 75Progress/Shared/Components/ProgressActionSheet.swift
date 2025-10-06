@@ -11,8 +11,8 @@ import PhotosUI
 struct ProgressActionSheet: View {
     let progressItem: ProgressItem
     @Binding var isPresented: Bool
-    let onPhoto: (UIImage) -> Void
-    let onNote: (String) -> Void
+    let onPhoto: (ProgressItem, UIImage) -> Void
+    let onNote: (ProgressItem, String) -> Void
     @State private var showingCamera = false
     @State private var showingPhotoPicker = false
     @State private var showingNoteEditor = false
@@ -163,7 +163,7 @@ struct ProgressActionSheet: View {
             })
         }
         .sheet(isPresented: $showingNoteEditor) {
-            NoteEditorView(noteText: $noteText, progressItem: progressItem, onNoteSaved: { note in
+            NoteEditorView(noteText: $noteText, progressItem: progressItem, onNoteSaved: { item, note in
                 saveNoteEntry(note: note)
             })
         }
@@ -179,56 +179,19 @@ struct ProgressActionSheet: View {
     }
     
     private func savePhotoEntry(image: UIImage) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-        
-        let entry = ProgressEntry(
-            progressItem: progressItem,
-            type: .photo,
-            content: "Photo taken on \(Date().formatted(date: .abbreviated, time: .shortened))",
-            imageData: imageData
-        )
-        
-        // Call the callback to update the UI immediately
-        onPhoto(image)
-        
-        // Here you would save to Core Data or your storage system
-        // For now, we'll just show success message
+        onPhoto(progressItem, image)
         successMessage = "Photo saved successfully!"
         showingSuccessAlert = true
     }
     
     private func saveImportedPhotoEntry(image: UIImage) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-        
-        let entry = ProgressEntry(
-            progressItem: progressItem,
-            type: .importedPhoto,
-            content: "Photo imported on \(Date().formatted(date: .abbreviated, time: .shortened))",
-            imageData: imageData
-        )
-        
-        // Call the callback to update the UI immediately
-        onPhoto(image)
-        
-        // Here you would save to Core Data or your storage system
-        // For now, we'll just show success message
+        onPhoto(progressItem, image)
         successMessage = "Photo imported successfully!"
         showingSuccessAlert = true
     }
     
     private func saveNoteEntry(note: String) {
-        let entry = ProgressEntry(
-            progressItem: progressItem,
-            type: .note,
-            content: note,
-            imageData: nil
-        )
-        
-        // Call the callback to update the UI immediately
-        onNote(note)
-        
-        // Here you would save to Core Data or your storage system
-        // For now, we'll just show success message
+        onNote(progressItem, note)
         successMessage = "Note saved successfully!"
         showingSuccessAlert = true
     }
@@ -323,7 +286,7 @@ struct PhotoPicker: UIViewControllerRepresentable {
 struct NoteEditorView: View {
     @Binding var noteText: String
     let progressItem: ProgressItem
-    let onNoteSaved: (String) -> Void
+    let onNoteSaved: (ProgressItem, String) -> Void
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
@@ -380,7 +343,7 @@ struct NoteEditorView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         if !noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            onNoteSaved(noteText)
+                            onNoteSaved(progressItem, noteText)
                             presentationMode.wrappedValue.dismiss()
                         }
                     }
@@ -394,14 +357,14 @@ struct NoteEditorView: View {
 }
 
 #Preview {
-    ProgressActionSheet(
-        progressItem: ProgressItem(
-            title: "Workout",
-            iconName: "dumbbell.fill",
-            color: .orange
-        ),
-        isPresented: .constant(true),
-        onPhoto: { _ in },
-        onNote: { _ in }
-    )
+            ProgressActionSheet(
+                progressItem: ProgressItem(
+                    title: "Workout",
+                    iconName: "dumbbell.fill",
+                    color: .orange
+                ),
+                isPresented: .constant(true),
+                onPhoto: { _, _ in },
+                onNote: { _, _ in }
+            )
 }

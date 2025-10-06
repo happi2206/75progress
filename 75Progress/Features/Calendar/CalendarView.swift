@@ -124,28 +124,8 @@ struct CalendarView: View {
             }
             .padding(.horizontal, 20)
             
-            // Current Streak
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Current Streak")
-                        .font(.system(size: 14, weight: .medium, design: .default))
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 8) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.orange)
-                        
-                        Text("\(viewModel.currentStreak()) days")
-                            .font(.system(size: 18, weight: .bold, design: .default))
-                            .foregroundColor(.primary)
-                    }
-                }
-                
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
+     
+       
             
             Spacer()
         }
@@ -169,6 +149,12 @@ struct CalendarView: View {
         formatter.dateFormat = "MMMM yyyy"
         return formatter.string(from: viewModel.currentMonth)
     }
+
+    private var streakLabel: String {
+        let streak = viewModel.currentStreak()
+        let suffix = streak == 1 ? "day" : "days"
+        return "\(streak) \(suffix)"
+    }
 }
 
 struct DayCell: View {
@@ -186,7 +172,7 @@ struct DayCell: View {
                 Text("\(calendar.component(.day, from: date))")
                     .font(.system(size: 16, weight: .medium, design: .default))
                     .foregroundColor(isToday ? .white : .primary)
-                
+
                 if let entry = entry {
                     HStack(spacing: 2) {
                         ForEach(0..<min(entry.photos.count, 3), id: \.self) { index in
@@ -220,10 +206,12 @@ struct DayCell: View {
     private var isToday: Bool {
         calendar.isDateInToday(date)
     }
-    
+
     private var backgroundColor: Color {
         if isToday {
             return .blue
+        } else if entry?.isComplete == true {
+            return Color.accentColor.opacity(0.25)
         } else if completion >= 0.8 {
             return .green.opacity(0.1)
         } else if completion > 0 {

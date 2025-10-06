@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Foundation
+import Combine
 
 class CalendarViewModel: ObservableObject {
     @Published var currentMonth: Date = Date()
@@ -15,10 +16,18 @@ class CalendarViewModel: ObservableObject {
     
     private let coreDataManager = CoreDataManager.shared
     private let calendar = Calendar.current
+    private var cancellables = Set<AnyCancellable>()
     
     init() {
         // Initialize without loading data immediately to avoid Core Data issues during app startup
         // Data will be loaded when the view appears
+        NotificationCenter.default.publisher(for: .dayProgressSaved)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                self.loadMonth(self.currentMonth)
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Month Navigation
@@ -106,7 +115,7 @@ class CalendarViewModel: ObservableObject {
     }
     
     func currentStreak() -> Int {
-        return streak(upTo: Date())
+        DayStreak.shared.currentStreak
     }
     
     // MARK: - Calendar Grid Generation
@@ -126,19 +135,19 @@ class CalendarViewModel: ObservableObject {
         
         var days: [Date?] = []
         
-        // Add leading blanks
+        //  leading blanks
         for _ in 0..<leadingBlanks {
             days.append(nil)
         }
         
-        // Add days of the month
+        // days of the month
         for day in 1...daysInMonth {
             if let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) {
                 days.append(date)
             }
         }
         
-        // Add trailing blanks to complete 6 weeks (42 days)
+        //  6 weeks (42 days)
         while days.count < 42 {
             days.append(nil)
         }

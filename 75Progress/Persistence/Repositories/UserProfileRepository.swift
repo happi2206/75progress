@@ -15,6 +15,7 @@ protocol UserProfileRepositoryProtocol {
     func upsertUserProfile(_ profile: UserProfile) -> AnyPublisher<UserProfile, AppError>
     func signInAnonymously() -> AnyPublisher<String, AppError>
     func loadProfileLocally() -> UserProfile?
+    func updateDisplayName(_ name: String, displayName: String?) -> AnyPublisher<UserProfile, AppError>
 }
 
 class UserProfileRepository: UserProfileRepositoryProtocol {
@@ -101,6 +102,58 @@ class UserProfileRepository: UserProfileRepositoryProtocol {
                     // Also save locally
                     self.saveProfileLocally(profile)
                     promise(.success(profile))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
+    func updateDisplayName(_ name: String, displayName: String?) -> AnyPublisher<UserProfile, AppError> {
+        guard let currentUser = auth.currentUser else {
+            return Fail(error: .authenticationError("User not authenticated"))
+                .eraseToAnyPublisher()
+        }
+
+        let docRef = firestore.collection("users").document(currentUser.uid)
+
+        return Future<UserProfile, AppError> { promise in
+            docRef.getDocument { snapshot, error in
+                if let error = error {
+                    promise(.failure(.networkError(error.localizedDescription)))
+                    return
+                }
+
+                guard let snapshot = snapshot,
+                      var data = snapshot.data(),
+                      var existingProfile = try? snapshot.data(as: UserProfile.self) else {
+                    promise(.failure(.persistenceError("Unable to load current profile")))
+                    return
+                }
+
+                data["name"] = name
+                data["displayName"] = displayName ?? name
+                data["lastUpdated"] = Timestamp(date: Date())
+
+                docRef.setData(data, merge: true) { error in
+                    if let error = error {
+                        promise(.failure(.networkError(error.localizedDescription)))
+                    } else {
+                        let updatedProfile = UserProfile(
+                            id: existingProfile.id,
+                            name: name,
+                            email: existingProfile.email,
+                            currentStreak: existingProfile.currentStreak,
+                            totalDays: existingProfile.totalDays,
+                            completedChallenges: existingProfile.completedChallenges,
+                            displayName: displayName ?? name,
+                            goals: existingProfile.goals,
+                            createdAt: existingProfile.createdAt,
+                            lastUpdated: Date(),
+                            deviceID: existingProfile.deviceID
+                        )
+                        self.saveProfileLocally(updatedProfile)
+                        promise(.success(updatedProfile))
+                    }
                 }
             }
         }

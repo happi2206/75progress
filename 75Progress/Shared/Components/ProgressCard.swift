@@ -11,8 +11,8 @@ import UIKit
 struct ProgressCard: View {
     let item: ProgressItem
     let content: ProgressCardContent?
-    let onPhoto: (UIImage) -> Void
-    let onNote: (String) -> Void
+    let onPhoto: (ProgressItem, UIImage) -> Void
+    let onNote: (ProgressItem, String) -> Void
     @State private var showingActionSheet = false
     @State private var showingContentView = false
     @State private var isPressed = false
@@ -56,12 +56,8 @@ struct ProgressCard: View {
             ProgressActionSheet(
                 progressItem: item,
                 isPresented: $showingActionSheet,
-                onPhoto: { image in
-                    onPhoto(image)
-                },
-                onNote: { text in
-                    onNote(text)
-                }
+                onPhoto: onPhoto,
+                onNote: onNote
             )
         }
         .sheet(isPresented: $showingContentView) {
@@ -69,12 +65,8 @@ struct ProgressCard: View {
                 progressItem: item,
                 content: content!,
                 isPresented: $showingContentView,
-                onPhoto: { image in
-                    onPhoto(image)
-                },
-                onNote: { text in
-                    onNote(text)
-                }
+                onPhoto: onPhoto,
+                onNote: onNote
             )
         }
     }
@@ -84,18 +76,15 @@ struct ProgressCard: View {
         switch content {
         case .photo(let image):
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.clear)
-                    .frame(height: 120)
-                    .overlay(
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 120)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    )
+                Color.clear
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(height: 120)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         case .note(let text):
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
@@ -128,8 +117,8 @@ struct ContentViewSheet: View {
     let progressItem: ProgressItem
     let content: ProgressCardContent
     @Binding var isPresented: Bool
-    let onPhoto: (UIImage) -> Void
-    let onNote: (String) -> Void
+    let onPhoto: (ProgressItem, UIImage) -> Void
+    let onNote: (ProgressItem, String) -> Void
     @State private var showingActionSheet = false
     
     var body: some View {
@@ -216,9 +205,9 @@ struct ContentViewSheet: View {
                         // Clear the content
                         switch content {
                         case .photo:
-                            onPhoto(UIImage()) // Empty image to clear
+                            onPhoto(progressItem, UIImage()) // Empty image to clear
                         case .note:
-                            onNote("") // Empty string to clear
+                            onNote(progressItem, "") // Empty string to clear
                         }
                         isPresented = false
                     }) {
@@ -260,12 +249,12 @@ struct ContentViewSheet: View {
             ProgressActionSheet(
                 progressItem: progressItem,
                 isPresented: $showingActionSheet,
-                onPhoto: { image in
-                    onPhoto(image)
+                onPhoto: { progressItem, image in
+                    onPhoto(progressItem, image)
                     isPresented = false
                 },
-                onNote: { text in
-                    onNote(text)
+                onNote: { progressItem, text in
+                    onNote(progressItem, text)
                     isPresented = false
                 }
             )
@@ -281,8 +270,8 @@ struct ContentViewSheet: View {
             color: .orange
         ),
         content: .none,
-        onPhoto: { _ in },
-        onNote: { _ in }
+        onPhoto: { _, _ in },
+        onNote: { _, _ in }
     )
     .padding()
-} 
+}

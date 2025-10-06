@@ -128,8 +128,28 @@ class ExportService {
             height: rect.height - 40
         )
         
-        UIColor.systemBlue.withAlphaComponent(0.1).setFill()
-        UIBezierPath(roundedRect: photoRect, cornerRadius: 8).fill()
+        if let photo = entry.photos.first,
+           let data = try? Data(contentsOf: photo.url),
+           let image = UIImage(data: data) {
+            let path = UIBezierPath(roundedRect: photoRect, cornerRadius: 8)
+            path.addClip()
+            image.draw(in: photoRect, blendMode: .normal, alpha: 1.0)
+        } else {
+            UIColor.systemBlue.withAlphaComponent(0.1).setFill()
+            UIBezierPath(roundedRect: photoRect, cornerRadius: 8).fill()
+
+            let symbol = UIImage(systemName: "photo")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal)
+            if let symbol {
+                let symbolSize: CGFloat = 28
+                let symbolRect = CGRect(
+                    x: photoRect.midX - symbolSize / 2,
+                    y: photoRect.midY - symbolSize / 2,
+                    width: symbolSize,
+                    height: symbolSize
+                )
+                symbol.draw(in: symbolRect)
+            }
+        }
         
         // Date
         let formatter = DateFormatter()

@@ -81,7 +81,8 @@ struct SharePickerView: View {
                     let (start, end) = viewModel.dateRange(for: selectedRange)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("\(entries.count) days with entries")
+                        let count = entries.count
+                        Text("\(count) day\(count == 1 ? "" : "s") with entries")
                             .font(.system(size: 16, weight: .medium, design: .default))
                             .foregroundColor(.primary)
                         
@@ -143,6 +144,9 @@ struct SharePickerView: View {
                     .font(.system(size: 16, weight: .semibold, design: .default))
                 }
             }
+        }
+        .onAppear {
+            viewModel.loadMonth(Date())
         }
     }
     

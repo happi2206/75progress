@@ -28,10 +28,10 @@ struct ProgressEntry: Identifiable, Codable {
     let id: UUID
     let progressItemTitle: String
     let progressItemIcon: String
-    let progressItemColor: ColorType // Store color as our custom ColorType
+    let progressItemColor: ColorType
     let date: Date
     let type: EntryType
-    let content: String // Note text or image data as base64 string
+    let content: String  
     let imageData: Data?
     
     enum EntryType: String, Codable, CaseIterable {

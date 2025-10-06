@@ -40,7 +40,21 @@ class CoreDataManager: ObservableObject {
     // MARK: - DayEntry Operations
     
     func saveDayEntry(_ dayEntry: DayEntry) {
-        let entity = DayEntryEntity(context: context)
+        let entity: DayEntryEntity
+        let request: NSFetchRequest<DayEntryEntity> = DayEntryEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", dayEntry.id as CVarArg)
+
+        if let existing = try? context.fetch(request).first {
+            entity = existing
+            if let photos = existing.photos as? Set<PhotoEntity> {
+                for photo in photos {
+                    context.delete(photo)
+                }
+            }
+        } else {
+            entity = DayEntryEntity(context: context)
+        }
+
         entity.id = dayEntry.id
         entity.date = dayEntry.date
         entity.isComplete = dayEntry.isComplete
@@ -118,6 +132,19 @@ class CoreDataManager: ObservableObject {
             save()
         } catch {
             print("Error deleting day entry: \(error)")
+        }
+    }
+    
+    func earliestDayEntryDate() -> Date? {
+        let request: NSFetchRequest<DayEntryEntity> = DayEntryEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        request.fetchLimit = 1
+        
+        do {
+            return try context.fetch(request).first?.date
+        } catch {
+            print("Error fetching earliest day entry: \(error)")
+            return nil
         }
     }
     
